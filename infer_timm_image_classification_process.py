@@ -245,8 +245,9 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "infer_timm_image_classification"
-        self.info.shortDescription = "Infer 'timm' image classification models"
-        self.info.description = "Inference can be done with models pretrained on Imagenet" \
+        self.info.shortDescription = "Infer timm image classification models"
+        self.info.description = "Infer timm image classification models." \
+                                "Inference can be done with models pretrained on Imagenet" \
                                 "or custom models trained with the plugin " \
                                 "train_timm_image_classification."
         # relative path -> as displayed in Ikomia application process tree
