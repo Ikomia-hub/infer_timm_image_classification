@@ -23,6 +23,7 @@ from infer_timm_image_classification.infer_timm_image_classification_process imp
 # PyQt GUI framework
 from PyQt5.QtWidgets import *
 import timm
+from PyQt5 import Qt
 
 
 # --------------------
@@ -42,12 +43,12 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         # Create layout : QGridLayout by default
         self.gridLayout = QGridLayout()
 
-        timm_models = timm.list_models()
+        timm_models = timm.list_models(pretrained=True)
         self.combo_model = pyqtutils.append_combo(self.gridLayout, "Model Name")
         for model in timm_models:
             self.combo_model.addItem(model)
         self.combo_model.setCurrentText(self.parameters.model_name)
-
+        self.combo_model
         self.spin_input_h = pyqtutils.append_spin(self.gridLayout, "Input height", self.parameters.input_size[0],
                                                   min=16)
         self.spin_input_w = pyqtutils.append_spin(self.gridLayout, "Input width", self.parameters.input_size[1],
