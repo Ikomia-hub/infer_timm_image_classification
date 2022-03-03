@@ -251,7 +251,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
                                 "or custom models trained with the plugin " \
                                 "train_timm_image_classification."
         # relative path -> as displayed in Ikomia application process tree
-        self.info.path = "Plugins/Python"
+        self.info.path = "Plugins/Python/Classification"
         self.info.iconPath = "icons/timm.png"
         self.info.version = "1.0.0"
         # self.info.iconPath = "your path to a specific icon"
