@@ -27,7 +27,7 @@ from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from PIL import Image
 import urllib
-from infer_timm_image_classification.utils import by_batch, polygon2bbox
+from infer_timm_image_classification.utils import polygon2bbox
 import numpy as np
 from ikomia.core.pycore import CPointF
 
