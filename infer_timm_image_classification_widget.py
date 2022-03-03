@@ -71,6 +71,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
 
     def onStateChanged(self,int):
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
+        self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
 
 
     def onApply(self):
