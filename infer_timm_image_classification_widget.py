@@ -54,24 +54,27 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
                                                   min=16)
         self.spin_input_w = pyqtutils.append_spin(self.gridLayout, "Input width", self.parameters.input_size[1],
                                                   min=16)
-        self.check_pretrained = pyqtutils.append_check(self.gridLayout, "Pretrained on Imagenet", self.parameters.pretrained)
-
-        self.browse_ckpt = pyqtutils.append_browse_file(self.gridLayout, label= "Checkpoint path",
-                                                        path=self.parameters.ckpt)
-        self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
+        self.check_pretrained = pyqtutils.append_check(self.gridLayout, "Pretrained on Imagenet",
+                                                       self.parameters.pretrained)
         self.check_pretrained.stateChanged.connect(self.onStateChanged)
 
+        self.browse_ckpt = pyqtutils.append_browse_file(self.gridLayout, label="Checkpoint path",
+                                                        path=self.parameters.ckpt)
+        self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
+
         self.browse_class_file = pyqtutils.append_browse_file(self.gridLayout, "Class names file",
-                                                               self.parameters.class_file)
+                                                              self.parameters.class_file)
+        self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
+
         # PyQt -> Qt wrapping
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
         # Set widget layout
         self.setLayout(layout_ptr)
 
-    def onStateChanged(self,int):
+    def onStateChanged(self, int):
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
-
+        self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
 
     def onApply(self):
         # Apply button clicked slot
