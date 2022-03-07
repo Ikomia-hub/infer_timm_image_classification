@@ -16,13 +16,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os.path
-
 import torch
 from ikomia import core, dataprocess
 import copy
 import timm
 from distutils.util import strtobool
-from torchvision.transforms import Resize, ToTensor
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from PIL import Image
@@ -30,9 +28,6 @@ import urllib
 from infer_timm_image_classification.utils import polygon2bbox
 import numpy as np
 from ikomia.core.pycore import CPointF
-
-
-# Your imports below
 
 
 # --------------------
@@ -83,17 +78,13 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
 
     def __init__(self, name, param):
         dataprocess.C2dImageTask.__init__(self, name)
-        # Add input/output of the process here
-        # Example :  self.addInput(dataprocess.CImageIO())
-        #           self.addOutput(dataprocess.CImageIO())
         # Add graphics output
         self.addOutput(dataprocess.CGraphicsOutput())
         # Add numeric outputs
         self.addOutput(dataprocess.CBlobMeasureIO())
         self.addOutput(dataprocess.CDataStringIO())
-
-
         self.model = None
+
         # Create parameters class
         if param is None:
             self.setParam(InferTimmImageClassificationParam())
@@ -122,10 +113,12 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
         if not self.model or param.update:
             ckpt = None
             if param.pretrained:
-                url, filename = (
-                    "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt", "imagenet_classes.txt")
-                urllib.request.urlretrieve(url, filename)
-                with open("imagenet_classes.txt", "r") as f:
+                class_filename = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
+                if not os.path.isfile(class_filename):
+                    url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+                    urllib.request.urlretrieve(url, class_filename)
+
+                with open(class_filename, "r") as f:
                     self.categories = [s.strip() for s in f.readlines()]
             else:
                 if os.path.isfile(param.class_file):
@@ -148,6 +141,7 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
             self.config["input_size"] = (3, *param.input_size)
             self.transform = create_transform(**self.config)
             param.update = False
+
         # Get input :
         input = self.getInput(0)
         graphics_input = self.getInput(1)
@@ -224,9 +218,6 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
                 confidences = [str(conf) for conf, _ in sorted_data]
                 names = [name for _, name in sorted_data]
                 numeric_output2.addValueList(confidences, "probability", names)
-
-        # Call to the process main routine
-        # dstImage = ...
 
         # Step progress bar:
         self.emitStepProgress()
