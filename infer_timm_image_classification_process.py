@@ -25,7 +25,6 @@ from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from PIL import Image
 import urllib
-from infer_timm_image_classification.utils import polygon2bbox
 import numpy as np
 from ikomia.core.pycore import CPointF
 
@@ -90,6 +89,14 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
             self.setParam(InferTimmImageClassificationParam())
         else:
             self.setParam(copy.deepcopy(param))
+
+    @staticmethod
+    def polygon2bbox(pts):
+        x = np.min(pts[:, 0])
+        y = np.min(pts[:, 1])
+        w = np.max(pts[:, 0]) - x
+        h = np.max(pts[:, 1]) - y
+        return [int(x), int(y), int(w), int(h)]
 
     def getProgressSteps(self):
         # Function returning the number of progress steps for this process
@@ -179,7 +186,7 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
                     elif isinstance(item, core.pycore.CGraphicsPolygon):
                         pts = item.points
                         pts_ar = np.array([[pt.x, pt.y] for pt in pts])
-                        x, y, w, h = polygon2bbox(pts_ar)
+                        x, y, w, h = self.polygon2bbox(pts_ar)
                         crop_img = srcImage[y:y + h, x:x + w]
                     if crop_img is not None:
                         count_item += 1
@@ -244,7 +251,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.iconPath = "icons/timm.png"
-        self.info.version = "1.0.0"
+        self.info.version = "1.0.1"
         # self.info.iconPath = "your path to a specific icon"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"

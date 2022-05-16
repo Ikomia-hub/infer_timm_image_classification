@@ -2,6 +2,7 @@ import numpy as np
 from PyQt5 import QtWidgets, QtCore
 from PyQt5.QtWidgets import QComboBox, QCompleter
 
+
 def completion(word_list, widget, i=True):
     """ Autocompletion of sender and subject """
     word_set = set(word_list)
@@ -30,11 +31,3 @@ class Autocomplete(QComboBox):
 
     def setAutocompletion(self, items, i):
         completion(items, self, i)
-
-
-def polygon2bbox(pts):
-    x = np.min(pts[:, 0])
-    y = np.min(pts[:, 1])
-    w = np.max(pts[:, 0]) - x
-    h = np.max(pts[:, 1]) - y
-    return [int(x), int(y), int(w), int(h)]
