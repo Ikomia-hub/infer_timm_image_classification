@@ -17,10 +17,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os.path
 import torch
-from ikomia import core, dataprocess
+from ikomia import utils, core, dataprocess
 import copy
 import timm
-from distutils.util import strtobool
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
 from PIL import Image
@@ -51,7 +50,7 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         # Parameters values are stored as string and accessible like a python dict
         # Example : self.windowSize = int(param_map["windowSize"])
         self.model_name = param_map["model_name"]
-        self.pretrained = strtobool(param_map["pretrained"])
+        self.pretrained = utils.strtobool(param_map["pretrained"])
         self.ckpt = param_map["ckpt"]
         self.input_size = eval(param_map["input_size"])
         self.class_file = param_map["class_file"]
