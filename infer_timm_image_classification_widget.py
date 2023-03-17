@@ -70,13 +70,13 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         layout_ptr = qtconversion.PyQtToQt(self.gridLayout)
 
         # Set widget layout
-        self.setLayout(layout_ptr)
+        self.set_layout(layout_ptr)
 
     def onStateChanged(self, int):
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
         self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
 
-    def onApply(self):
+    def on_apply(self):
         # Apply button clicked slot
 
         # Get parameters from widget
@@ -88,7 +88,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.parameters.input_size = (self.spin_input_h.value(), self.spin_input_w.value())
         self.parameters.class_file = self.browse_class_file.path
         # Send signal to launch the process
-        self.emitApply(self.parameters)
+        self.emit_apply(self.parameters)
 
 
 # --------------------

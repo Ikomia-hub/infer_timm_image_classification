@@ -45,7 +45,7 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         self.input_size = (224, 224)
         self.class_file = ""
 
-    def setParamMap(self, param_map):
+    def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
         # Example : self.windowSize = int(param_map["windowSize"])
@@ -55,10 +55,10 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         self.input_size = eval(param_map["input_size"])
         self.class_file = param_map["class_file"]
 
-    def getParamMap(self):
+    def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
-        param_map = core.ParamMap()
+        param_map = {}
         # Example : paramMap["windowSize"] = str(self.windowSize)
         param_map["model_name"] = self.model_name
         param_map["pretrained"] = str(self.pretrained)
@@ -72,22 +72,18 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
 # - Class which implements the process
 # - Inherits PyCore.CWorkflowTask or derived from Ikomia API
 # --------------------
-class InferTimmImageClassification(dataprocess.C2dImageTask):
+class InferTimmImageClassification(dataprocess.CClassificationTask):
 
     def __init__(self, name, param):
-        dataprocess.C2dImageTask.__init__(self, name)
-        # Add graphics output
-        self.addOutput(dataprocess.CGraphicsOutput())
-        # Add numeric outputs
-        self.addOutput(dataprocess.CBlobMeasureIO())
-        self.addOutput(dataprocess.CDataStringIO())
+        dataprocess.CClassificationTask.__init__(self, name)
+
         self.model = None
 
         # Create parameters class
         if param is None:
-            self.setParam(InferTimmImageClassificationParam())
+            self.set_param_object(InferTimmImageClassificationParam())
         else:
-            self.setParam(copy.deepcopy(param))
+            self.set_param_object(copy.deepcopy(param))
 
     @staticmethod
     def polygon2bbox(pts):
@@ -97,7 +93,7 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
         h = np.max(pts[:, 1]) - y
         return [int(x), int(y), int(w), int(h)]
 
-    def getProgressSteps(self):
+    def get_progress_steps(self):
         # Function returning the number of progress steps for this process
         # This is handled by the main progress bar of Ikomia application
         return 1
@@ -110,11 +106,11 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
 
     def run(self):
         # Core function of your process
-        # Call beginTaskRun for initialization
-        self.beginTaskRun()
+        # Call begin_task_run for initialization
+        self.begin_task_run()
 
         # Get parameters :
-        param = self.getParam()
+        param = self.get_param_object()
 
         if not self.model or param.update:
             ckpt = None
@@ -126,6 +122,7 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
 
                 with open(class_filename, "r") as f:
                     self.categories = [s.strip() for s in f.readlines()]
+                    self.set_names(self.categories)
             else:
                 if os.path.isfile(param.class_file):
                     with open(param.class_file, "r") as f:
@@ -135,10 +132,10 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
                 else:
                     print("Impossible to open " + param.class_file)
                     # Step progress bar:
-                    self.emitStepProgress()
+                    self.emit_step_progress()
 
-                    # Call endTaskRun to finalize process
-                    self.endTaskRun()
+                    # Call end_task_run to finalize process
+                    self.end_task_run()
 
             self.model = timm.create_model(param.model_name, pretrained=param.pretrained, checkpoint_path=ckpt,
                                            num_classes=len(self.categories))
@@ -149,87 +146,34 @@ class InferTimmImageClassification(dataprocess.C2dImageTask):
             param.update = False
 
         # Get input :
-        input = self.getInput(0)
-        graphics_input = self.getInput(1)
-
-        # Get output :
-        graphics_output = self.getOutput(1)
+        input = self.get_input(0)
 
         # Get image from input/output (numpy array):
-        srcImage = input.getImage()
-        self.forwardInputImage(0, 0)
+        srcImage = input.get_image()
+        self.forward_input_image(0, 0)
 
-        # Init numeric output
-        numeric_output1 = self.getOutput(2)
-        numeric_output1.clearData()
-        numeric_output2 = self.getOutput(3)
-        numeric_output2.clearData()
-
-        if srcImage is not None and self.model:
-            color = [255, 0, 0]
-            # Check if there are boxes as input
-            if graphics_input.isDataAvailable():
-                polygons = graphics_input.getItems()
-                count_item = 0
-                # create batch of images containing text
-                for item in polygons:
-                    crop_img = None
-                    if isinstance(item, core.pycore.CGraphicsRectangle):
-                        x, y, w, h = item.x, item.y, item.width, item.height
-                        pts = [CPointF(x, y),
-                               CPointF(x + w, y),
-                               CPointF(x + w, y + h),
-                               CPointF(x, y + h)]
-                        x, y, w, h = int(x), int(y), int(w), int(h)
-                        crop_img = srcImage[y:y + h, x:x + w]
-                    elif isinstance(item, core.pycore.CGraphicsPolygon):
-                        pts = item.points
-                        pts_ar = np.array([[pt.x, pt.y] for pt in pts])
-                        x, y, w, h = self.polygon2bbox(pts_ar)
-                        crop_img = srcImage[y:y + h, x:x + w]
-                    if crop_img is not None:
-                        count_item += 1
-                        if np.cumprod(np.shape(crop_img)).flatten()[-1] > 0:
-                            prob = self.predict(crop_img)
-                            class_index = torch.argmax(prob)
-                            prop_poly = core.GraphicsPolygonProperty()
-                            prop_poly.pen_color = color
-                            prop_text = core.GraphicsTextProperty()
-                            graphics_box = graphics_output.addPolygon(pts, prop_poly)
-                            graphics_box.setCategory(
-                                self.categories[class_index])
-                            graphics_output.addText(self.categories[class_index], int(x), int(y), prop_text)
-                            # Object results
-                            results = []
-                            confidence_data = dataprocess.CObjectMeasure(
-                                dataprocess.CMeasure(core.MeasureId.CUSTOM, "Confidence"),
-                                prob[class_index].item(),
-                                graphics_box.getId(),
-                                self.categories[class_index])
-                            box_data = dataprocess.CObjectMeasure(
-                                dataprocess.CMeasure(core.MeasureId.BBOX),
-                                item.getBoundingRect(),
-                                graphics_box.getId(),
-                                self.categories[class_index])
-                            results.append(confidence_data)
-                            results.append(box_data)
-                            numeric_output1.addObjectMeasures(results)
-
-            else:
-                prob = self.predict(srcImage)
-                class_index = torch.argmax(prob)
-                msg = self.categories[class_index] + ": {:.3f}".format(prob[class_index])
-                graphics_output.addText(msg, 10, 10)
-                sorted_data = sorted(zip(prob.flatten().tolist(), self.categories), reverse=True)
-                confidences = [str(conf) for conf, _ in sorted_data]
-                names = [name for _, name in sorted_data]
-                numeric_output2.addValueList(confidences, "probability", names)
+        # Check if there are boxes as input
+        if not self.is_whole_image_classification():
+            input_objects = self.get_input_objects()
+            for obj in input_objects:
+                roi_img = self.get_object_sub_image(obj)
+                if roi_img is None:
+                    continue
+                prob = self.predict(roi_img)
+                class_index = torch.argmax(prob).item()
+                self.add_object(obj, class_index, prob[class_index].item())
+        else:
+            prob = self.predict(srcImage)
+            sorted_data = sorted(zip(prob.flatten().tolist(), self.categories), reverse=True)
+            confidences = [str(conf) for conf, _ in sorted_data]
+            names = [name for _, name in sorted_data]
+            self.set_whole_image_results(names, confidences)
 
         # Step progress bar:
-        self.emitStepProgress()
+        self.emit_step_progress()
 
-        # Call endTaskRun to finalize process
-        self.endTaskRun()
+        # Call end_task_run to finalize process
+        self.end_task_run()
 
 
 # --------------------
@@ -242,23 +186,23 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         dataprocess.CTaskFactory.__init__(self)
         # Set process information as string here
         self.info.name = "infer_timm_image_classification"
-        self.info.shortDescription = "Infer timm image classification models"
+        self.info.short_description = "Infer timm image classification models"
         self.info.description = "Infer timm image classification models." \
                                 "Inference can be done with models pretrained on Imagenet" \
                                 "or custom models trained with the plugin " \
                                 "train_timm_image_classification."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
-        self.info.iconPath = "icons/timm.png"
-        self.info.version = "1.0.1"
-        # self.info.iconPath = "your path to a specific icon"
+        self.info.icon_path = "icons/timm.png"
+        self.info.version = "1.1.0"
+        # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
         self.info.journal = "GitHub repository"
         self.info.year = 2019
         self.info.license = "Apache-2.0 License"
         # URL of documentation
-        self.info.documentationLink = "https://rwightman.github.io/pytorch-image-models/"
+        self.info.documentation_link = "https://rwightman.github.io/pytorch-image-models/"
         # Code source repository
         self.info.repository = "https://github.com/rwightman/pytorch-image-models"
         # Keywords used for search
