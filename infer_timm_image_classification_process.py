@@ -37,34 +37,34 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
     def __init__(self):
         core.CWorkflowTaskParam.__init__(self)
         # Place default value initialization here
-        # Example : self.windowSize = 25
+        self.model_name_or_path = ""
         self.model_name = "resnet18"
-        self.pretrained = True
+        self.use_pretrained = True
         self.update = False
-        self.ckpt = ""
+        self.model_path = ""
         self.input_size = (224, 224)
-        self.class_file = ""
+        self.classes_file = ""
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        # Example : self.windowSize = int(param_map["windowSize"])
+        self.model_name_or_path = param_map["model_name_or_path"]
         self.model_name = param_map["model_name"]
-        self.pretrained = utils.strtobool(param_map["pretrained"])
-        self.ckpt = param_map["ckpt"]
+        self.use_pretrained = utils.strtobool(param_map["use_pretrained"])
+        self.model_path = param_map["model_path"]
         self.input_size = eval(param_map["input_size"])
-        self.class_file = param_map["class_file"]
+        self.classes_file = param_map["classes_file"]
 
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {}
-        # Example : paramMap["windowSize"] = str(self.windowSize)
+        param_map["model_name_or_path"] = self.model_name_or_path
         param_map["model_name"] = self.model_name
-        param_map["pretrained"] = str(self.pretrained)
-        param_map["ckpt"] = self.ckpt
+        param_map["use_pretrained"] = str(self.use_pretrained)
+        param_map["model_path"] = self.model_path
         param_map["input_size"] = str(self.input_size)
-        param_map["class_file"] = self.class_file
+        param_map["classes_file"] = self.classes_file
         return param_map
 
 
@@ -114,7 +114,16 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
         if not self.model or param.update:
             ckpt = None
-            if param.pretrained:
+            if param.model_path != "":
+                param.use_pretrained = False
+            if param.model_name_or_path != "":
+                if os.path.isfile(param.model_name_or_path):
+                    param.use_pretrained = False
+                    param.model_path = param.model_name_or_path
+                else:
+                    param.model_name = param.model_name_or_path
+
+            if param.use_pretrained:
                 class_filename = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
                 if not os.path.isfile(class_filename):
                     url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
@@ -124,20 +133,20 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                     self.categories = [s.strip() for s in f.readlines()]
                     self.set_names(self.categories)
             else:
-                if os.path.isfile(param.class_file):
-                    with open(param.class_file, "r") as f:
+                if os.path.isfile(param.classes_file):
+                    with open(param.classes_file, "r") as f:
                         self.categories = [s.strip() for s in f.readlines()]
-                    if os.path.isfile(param.ckpt):
-                        ckpt = param.ckpt
+                    if os.path.isfile(param.model_path):
+                        ckpt = param.model_path
                 else:
-                    print("Impossible to open " + param.class_file)
+                    print("Impossible to open " + param.classes_file)
                     # Step progress bar:
                     self.emit_step_progress()
 
                     # Call end_task_run to finalize process
                     self.end_task_run()
 
-            self.model = timm.create_model(param.model_name, pretrained=param.pretrained, checkpoint_path=ckpt,
+            self.model = timm.create_model(param.model_name, pretrained=param.use_pretrained, checkpoint_path=ckpt,
                                            num_classes=len(self.categories))
             self.model.eval()
             self.config = resolve_data_config({}, model=self.model)

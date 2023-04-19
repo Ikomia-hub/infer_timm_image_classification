@@ -55,15 +55,15 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.spin_input_w = pyqtutils.append_spin(self.gridLayout, "Input width", self.parameters.input_size[1],
                                                   min=16)
         self.check_pretrained = pyqtutils.append_check(self.gridLayout, "Pretrained on Imagenet",
-                                                       self.parameters.pretrained)
+                                                       self.parameters.use_pretrained)
         self.check_pretrained.stateChanged.connect(self.onStateChanged)
 
         self.browse_ckpt = pyqtutils.append_browse_file(self.gridLayout, label="Checkpoint path",
-                                                        path=self.parameters.ckpt)
+                                                        path=self.parameters.model_path)
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
 
         self.browse_class_file = pyqtutils.append_browse_file(self.gridLayout, "Class names file",
-                                                              self.parameters.class_file)
+                                                              self.parameters.classes_file)
         self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
 
         # PyQt -> Qt wrapping
@@ -82,11 +82,11 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         # Get parameters from widget
         # Example : self.parameters.windowSize = self.spinWindowSize.value()
         self.parameters.model_name = self.combo_model.currentText()
-        self.parameters.pretrained = self.check_pretrained.isChecked()
+        self.parameters.use_pretrained = self.check_pretrained.isChecked()
         self.parameters.update = True
-        self.parameters.ckpt = self.browse_ckpt.path
+        self.parameters.model_path = self.browse_ckpt.path
         self.parameters.input_size = (self.spin_input_h.value(), self.spin_input_w.value())
-        self.parameters.class_file = self.browse_class_file.path
+        self.parameters.classes_file = self.browse_class_file.path
         # Send signal to launch the process
         self.emit_apply(self.parameters)
 
