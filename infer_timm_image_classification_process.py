@@ -25,7 +25,6 @@ from timm.data.transforms_factory import create_transform
 from PIL import Image
 import urllib
 import numpy as np
-from ikomia.core.pycore import CPointF
 
 
 # --------------------
