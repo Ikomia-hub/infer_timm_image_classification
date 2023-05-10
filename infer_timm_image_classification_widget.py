@@ -63,7 +63,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
 
         self.browse_class_file = pyqtutils.append_browse_file(self.gridLayout, "Class names file",
-                                                              self.parameters.classes_file)
+                                                              self.parameters.class_file)
         self.browse_class_file.setEnabled(not self.check_pretrained.isChecked())
 
         # PyQt -> Qt wrapping
@@ -86,7 +86,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.parameters.update = True
         self.parameters.model_path = self.browse_ckpt.path
         self.parameters.input_size = (self.spin_input_h.value(), self.spin_input_w.value())
-        self.parameters.classes_file = self.browse_class_file.path
+        self.parameters.class_file = self.browse_class_file.path
         # Send signal to launch the process
         self.emit_apply(self.parameters)
 
