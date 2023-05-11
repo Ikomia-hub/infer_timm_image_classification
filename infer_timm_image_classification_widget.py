@@ -59,7 +59,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.check_pretrained.stateChanged.connect(self.onStateChanged)
 
         self.browse_ckpt = pyqtutils.append_browse_file(self.gridLayout, label="Checkpoint path",
-                                                        path=self.parameters.model_path)
+                                                        path=self.parameters.model_weight_file)
         self.browse_ckpt.setEnabled(not self.check_pretrained.isChecked())
 
         self.browse_class_file = pyqtutils.append_browse_file(self.gridLayout, "Class names file",
@@ -84,7 +84,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
         self.parameters.model_name = self.combo_model.currentText()
         self.parameters.use_pretrained = self.check_pretrained.isChecked()
         self.parameters.update = True
-        self.parameters.model_path = self.browse_ckpt.path
+        self.parameters.model_weight_file = self.browse_ckpt.path
         self.parameters.input_size = (self.spin_input_h.value(), self.spin_input_w.value())
         self.parameters.class_file = self.browse_class_file.path
         # Send signal to launch the process

@@ -36,21 +36,19 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
     def __init__(self):
         core.CWorkflowTaskParam.__init__(self)
         # Place default value initialization here
-        self.model_name_or_path = ""
         self.model_name = "resnet18"
         self.use_pretrained = True
         self.update = False
-        self.model_path = ""
+        self.model_weight_file = ""
         self.input_size = (224, 224)
         self.class_file = ""
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
         # Parameters values are stored as string and accessible like a python dict
-        self.model_name_or_path = param_map["model_name_or_path"]
         self.model_name = param_map["model_name"]
         self.use_pretrained = utils.strtobool(param_map["use_pretrained"])
-        self.model_path = param_map["model_path"]
+        self.model_weight_file = param_map["model_weight_file"]
         self.input_size = eval(param_map["input_size"])
         self.class_file = param_map["class_file"]
 
@@ -58,10 +56,9 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
         param_map = {}
-        param_map["model_name_or_path"] = self.model_name_or_path
         param_map["model_name"] = self.model_name
         param_map["use_pretrained"] = str(self.use_pretrained)
-        param_map["model_path"] = self.model_path
+        param_map["model_weight_file"] = self.model_weight_file
         param_map["input_size"] = str(self.input_size)
         param_map["class_file"] = self.class_file
         return param_map
@@ -113,14 +110,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
         if not self.model or param.update:
             ckpt = None
-            if param.model_path != "":
-                param.use_pretrained = False
-            if param.model_name_or_path != "":
-                if os.path.isfile(param.model_name_or_path):
-                    param.use_pretrained = False
-                    param.model_path = param.model_name_or_path
-                else:
-                    param.model_name = param.model_name_or_path
+            if param.model_weight_file != "":
+                param.use_pretrained = True
 
             if param.use_pretrained:
                 class_filename = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
@@ -135,8 +126,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                 if os.path.isfile(param.class_file):
                     with open(param.class_file, "r") as f:
                         self.categories = [s.strip() for s in f.readlines()]
-                    if os.path.isfile(param.model_path):
-                        ckpt = param.model_path
+                    if os.path.isfile(param.model_weight_file):
+                        ckpt = param.model_weight_file
                 else:
                     print("Impossible to open " + param.class_file)
                     # Step progress bar:
