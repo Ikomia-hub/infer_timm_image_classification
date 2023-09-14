@@ -19,10 +19,12 @@
     </a> 
 </p>
 
-Infer timm image classification models.Inference can be done with models pretrained on Imagenetor custom models trained with the plugin train_timm_image_classification.
+Run timm image classification models.
 
-[Insert illustrative image here. Image must be accessible publicly, in algorithm Github repository for example.
-<img src="images/illustration.png"  alt="Illustrative image" width="30%" height="30%">]
+Inference can be done with models pretrained on Imagenet or custom models trained with the plugin [train_timm_image_classification](https://app.ikomia.ai/hub/algorithms/train_timm_image_classification).
+
+![Rock paper scissors](https://uploads-ssl.webflow.com/645cec60ffb18d5ebb37da4b/64e480470f4a9d7b0a3198fb_Picture23-p-800.jpg)
+
 
 ## :rocket: Use with Ikomia API
 
@@ -36,11 +38,10 @@ pip install ikomia
 
 #### 2. Create your workflow
 
-[Change the sample image URL to fit algorithm purpose]
 
 ```python
-import ikomia
 from ikomia.dataprocess.workflow import Workflow
+from ikomia.utils.displayIO import display
 
 # Init your workflow
 wf = Workflow()
@@ -48,8 +49,11 @@ wf = Workflow()
 # Add algorithm
 algo = wf.add_task(name="infer_timm_image_classification", auto_connect=True)
 
-# Run on your image  
-wf.run_on(url="example_image.png")
+# Run directly on your image
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_porsche.jpg")
+
+# Inspect your result
+display(algo.get_image_with_graphics())
 ```
 
 ## :sunny: Use with Ikomia Studio
@@ -62,13 +66,19 @@ Ikomia Studio offers a friendly UI with the same features as the API.
 
 ## :pencil: Set algorithm parameters
 
-[Explain each algorithm parameters]
+- **model_name** (str) - default 'resnet18': Name of the pre-trained model. 
+    - There are hundreds of timm models. You can list them using: timm.list_models()
+- **input_size** (list) - default '(224, 224)': Size of the input image.
+- **model_weight_file** (str, *optional*): Path to model weights file. 
+- **class_file** (str, *optional*): Path to text file (.txt) containing class names.
 
-[Change the sample image URL to fit algorithm purpose]
+
+**Parameters** should be in **strings format**  when added to the dictionary.
+
 
 ```python
-import ikomia
 from ikomia.dataprocess.workflow import Workflow
+from ikomia.utils.displayIO import display
 
 # Init your workflow
 wf = Workflow()
@@ -77,14 +87,15 @@ wf = Workflow()
 algo = wf.add_task(name="infer_timm_image_classification", auto_connect=True)
 
 algo.set_parameters({
-    "param1": "value1",
-    "param2": "value2",
-    ...
+    "model_name": "cait_s24_384",
+    "input_size": "(384, 384)",
 })
 
-# Run on your image  
-wf.run_on(url="example_image.png")
+# Run directly on your image
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_porsche.jpg")
 
+# Inspect your result
+display(algo.get_image_with_graphics())
 ```
 
 ## :mag: Explore algorithm outputs
@@ -102,16 +113,12 @@ wf = Workflow()
 algo = wf.add_task(name="infer_timm_image_classification", auto_connect=True)
 
 # Run on your image  
-wf.run_on(url="example_image.png")
+wf.run_on(url="https://raw.githubusercontent.com/Ikomia-dev/notebooks/main/examples/img/img_porsche.jpg")
 
 # Iterate over outputs
-for output in algo.get_outputs()
+for output in algo.get_outputs():
     # Print information
     print(output)
     # Export it to JSON
     output.to_json()
 ```
-
-## :fast_forward: Advanced usage 
-
-[optional]
