@@ -81,6 +81,9 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
         else:
             self.set_param_object(copy.deepcopy(param))
 
+        self.model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "weights")
+
+
     @staticmethod
     def polygon2bbox(pts):
         x = np.min(pts[:, 0])
@@ -135,7 +138,7 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
                     # Call end_task_run to finalize process
                     self.end_task_run()
-
+            torch.hub.set_dir(self.model_folder)
             self.model = timm.create_model(param.model_name, pretrained=param.use_pretrained, checkpoint_path=ckpt,
                                            num_classes=len(self.categories))
             self.model.eval()
