@@ -196,7 +196,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
-        self.info.version = "1.1.0"
+        self.info.version = "1.1.1"
         # self.info.icon_path = "your path to a specific icon"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
