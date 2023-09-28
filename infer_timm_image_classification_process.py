@@ -189,10 +189,6 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # Set process information as string here
         self.info.name = "infer_timm_image_classification"
         self.info.short_description = "Infer timm image classification models"
-        self.info.description = "Infer timm image classification models." \
-                                "Inference can be done with models pretrained on Imagenet" \
-                                "or custom models trained with the plugin " \
-                                "train_timm_image_classification."
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
@@ -206,7 +202,8 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # URL of documentation
         self.info.documentation_link = "https://rwightman.github.io/pytorch-image-models/"
         # Code source repository
-        self.info.repository = "https://github.com/rwightman/pytorch-image-models"
+        self.info.repository = "https://github.com/Ikomia-hub/infer_timm_image_classification"
+        self.info.original_repository = "https://github.com/rwightman/pytorch-image-models"
         # Keywords used for search
         self.info.keywords = "timm, infer, image, classification, imagenet, custom"
 
