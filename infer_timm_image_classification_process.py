@@ -206,6 +206,8 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         self.info.original_repository = "https://github.com/rwightman/pytorch-image-models"
         # Keywords used for search
         self.info.keywords = "timm, infer, image, classification, imagenet, custom"
+        self.info.algo_type = core.AlgoType.INFER
+        self.info.algo_tasks = "CLASSIFICATION"
 
     def create(self, param=None):
         # Create process object
