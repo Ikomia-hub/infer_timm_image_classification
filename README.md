@@ -23,7 +23,7 @@ Run timm image classification models.
 
 Inference can be done with models pretrained on Imagenet or custom models trained with the plugin [train_timm_image_classification](https://app.ikomia.ai/hub/algorithms/train_timm_image_classification).
 
-![car classification](https://raw.githubusercontent.com/Ikomia-hub/infer_timm_image_classification/feat/new_readme/icons/output.jpg)
+![car classification](https://raw.githubusercontent.com/Ikomia-hub/infer_timm_image_classification/main/icons/output.jpg)
 
 
 ## :rocket: Use with Ikomia API
