@@ -15,16 +15,21 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os.path
-import torch
-from ikomia import utils, core, dataprocess
 import copy
+import os.path
+import urllib
+
+import torch
+
+from PIL import Image
+
+import numpy as np
+
+from ikomia import utils, core, dataprocess
+
 import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
-from PIL import Image
-import urllib
-import numpy as np
 
 
 # --------------------
@@ -55,12 +60,13 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
     def get_values(self):
         # Send parameters values to Ikomia application
         # Create the specific dict structure (string container)
-        param_map = {}
-        param_map["model_name"] = self.model_name
-        param_map["use_pretrained"] = str(self.use_pretrained)
-        param_map["model_weight_file"] = self.model_weight_file
-        param_map["input_size"] = str(self.input_size)
-        param_map["class_file"] = self.class_file
+        param_map = {
+            "model_name": self.model_name,
+            "use_pretrained": str(self.use_pretrained),
+            "model_weight_file": self.model_weight_file,
+            "input_size": str(self.input_size),
+            "class_file": self.class_file
+        }
         return param_map
 
 
@@ -74,6 +80,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
         dataprocess.CClassificationTask.__init__(self, name)
 
         self.model = None
+        self.categories = None
+        self.config = None
 
         # Create parameters class
         if param is None:
@@ -98,8 +106,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
         return 1
 
     def predict(self, img):
-        srcTensor = self.transform(Image.fromarray(img)).unsqueeze(0)
-        out = self.model(srcTensor)
+        src_tensor = self.transform(Image.fromarray(img)).unsqueeze(0)
+        out = self.model(src_tensor)
         probabilities = torch.nn.functional.softmax(out[0], dim=0)
         return probabilities
 
@@ -113,7 +121,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
         if not self.model or param.update:
             ckpt = None
-            if param.model_weight_file != "":
+            if param.model_weight_file == "":
+                # ImageNet pre-trained model
                 param.use_pretrained = True
 
             if param.use_pretrained:
@@ -129,17 +138,20 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                 if os.path.isfile(param.class_file):
                     with open(param.class_file, "r") as f:
                         self.categories = [s.strip() for s in f.readlines()]
+
                     if os.path.isfile(param.model_weight_file):
                         ckpt = param.model_weight_file
                 else:
-                    print("Impossible to open " + param.class_file)
+                    print("Unable to open " + param.class_file)
                     # Step progress bar:
                     self.emit_step_progress()
-
                     # Call end_task_run to finalize process
                     self.end_task_run()
+
             torch.hub.set_dir(self.model_folder)
-            self.model = timm.create_model(param.model_name, pretrained=param.use_pretrained, checkpoint_path=ckpt,
+            self.model = timm.create_model(param.model_name,
+                                           pretrained=param.use_pretrained,
+                                           checkpoint_path=ckpt,
                                            num_classes=len(self.categories))
             self.model.eval()
             self.config = resolve_data_config({}, model=self.model)
@@ -148,10 +160,10 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
             param.update = False
 
         # Get input :
-        input = self.get_input(0)
+        img_input = self.get_input(0)
 
         # Get image from input/output (numpy array):
-        srcImage = input.get_image()
+        src_image = img_input.get_image()
         self.forward_input_image(0, 0)
 
         # Check if there are boxes as input
@@ -161,11 +173,12 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                 roi_img = self.get_object_sub_image(obj)
                 if roi_img is None:
                     continue
+
                 prob = self.predict(roi_img)
                 class_index = torch.argmax(prob).item()
                 self.add_object(obj, class_index, prob[class_index].item())
         else:
-            prob = self.predict(srcImage)
+            prob = self.predict(src_image)
             sorted_data = sorted(zip(prob.flatten().tolist(), self.categories), reverse=True)
             confidences = [str(conf) for conf, _ in sorted_data]
             names = [name for _, name in sorted_data]
@@ -192,13 +205,16 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
-        self.info.version = "1.1.3"
-        # self.info.icon_path = "your path to a specific icon"
+        self.info.version = "1.2.0"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
         self.info.journal = "GitHub repository"
         self.info.year = 2019
         self.info.license = "Apache-2.0 License"
+        # Ikomia API compatibility
+        self.info.min_ikomia_version = "0.11.1"
+        # Python compatibility
+        self.info.min_python_version = "3.8.0"
         # URL of documentation
         self.info.documentation_link = "https://rwightman.github.io/pytorch-image-models/"
         # Code source repository

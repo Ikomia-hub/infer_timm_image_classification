@@ -15,17 +15,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-from ikomia import core, dataprocess
-from ikomia.utils import pyqtutils, qtconversion
-from infer_timm_image_classification.infer_timm_image_classification_process import InferTimmImageClassificationParam
+import timm
 
 # PyQt GUI framework
 from PyQt5.QtWidgets import *
-import timm
-from PyQt5.QtCore import Qt
-from infer_timm_image_classification.utils import Autocomplete
 
+from ikomia import core, dataprocess
+from ikomia.utils import pyqtutils, qtconversion
+
+from infer_timm_image_classification.utils import Autocomplete
+from infer_timm_image_classification.infer_timm_image_classification_process import InferTimmImageClassificationParam
 
 # --------------------
 # - Class which implements widget associated with the process
@@ -78,9 +77,7 @@ class InferTimmImageClassificationWidget(core.CWorkflowTaskWidget):
 
     def on_apply(self):
         # Apply button clicked slot
-
         # Get parameters from widget
-        # Example : self.parameters.windowSize = self.spinWindowSize.value()
         self.parameters.model_name = self.combo_model.currentText()
         self.parameters.use_pretrained = self.check_pretrained.isChecked()
         self.parameters.update = True

@@ -1,5 +1,4 @@
-import numpy as np
-from PyQt5 import QtWidgets, QtCore
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QComboBox, QCompleter
 
 
@@ -7,10 +6,12 @@ def completion(word_list, widget, i=True):
     """ Autocompletion of sender and subject """
     word_set = set(word_list)
     completer = QCompleter(word_set)
+
     if i:
         completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
     else:
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitive)
+
     completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
     widget.setCompleter(completer)
 
@@ -27,7 +28,7 @@ class Autocomplete(QComboBox):
         self.setEditable(True)
         self.setDuplicatesEnabled(self.allowDuplicates)
         self.addItems(self.items)
-        self.setAutocompletion(self.items, i=self.insensitivity)
+        self.set_autocompletion(self.items, i=self.insensitivity)
 
-    def setAutocompletion(self, items, i):
+    def set_autocompletion(self, items, i):
         completion(items, self, i)
