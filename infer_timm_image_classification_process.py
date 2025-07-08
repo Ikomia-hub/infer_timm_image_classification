@@ -80,8 +80,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
         dataprocess.CClassificationTask.__init__(self, name)
 
         self.model = None
-        self.categories = None
         self.config = None
+        self.transform = None
 
         # Create parameters class
         if param is None:
@@ -131,14 +131,10 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                     url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
                     urllib.request.urlretrieve(url, class_filename)
 
-                with open(class_filename, "r") as f:
-                    self.categories = [s.strip() for s in f.readlines()]
-                    self.set_names(self.categories)
+                self.read_class_names(class_filename)
             else:
                 if os.path.isfile(param.class_file):
-                    with open(param.class_file, "r") as f:
-                        self.categories = [s.strip() for s in f.readlines()]
-
+                    self.read_class_names(param.class_file)
                     if os.path.isfile(param.model_weight_file):
                         ckpt = param.model_weight_file
                 else:
@@ -152,7 +148,7 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
             self.model = timm.create_model(param.model_name,
                                            pretrained=param.use_pretrained,
                                            checkpoint_path=ckpt,
-                                           num_classes=len(self.categories))
+                                           num_classes=len(self.get_names()))
             self.model.eval()
             self.config = resolve_data_config({}, model=self.model)
             self.config["input_size"] = (3, *param.input_size)
@@ -179,7 +175,7 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                 self.add_object(obj, class_index, prob[class_index].item())
         else:
             prob = self.predict(src_image)
-            sorted_data = sorted(zip(prob.flatten().tolist(), self.categories), reverse=True)
+            sorted_data = sorted(zip(prob.flatten().tolist(), self.get_names()), reverse=True)
             confidences = [str(conf) for conf, _ in sorted_data]
             names = [name for _, name in sorted_data]
             self.set_whole_image_results(names, confidences)
@@ -205,7 +201,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
-        self.info.version = "1.2.0"
+        self.info.version = "1.2.1"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
         self.info.journal = "GitHub repository"
