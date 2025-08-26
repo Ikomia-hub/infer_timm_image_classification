@@ -47,6 +47,7 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         self.model_weight_file = ""
         self.input_size = (224, 224)
         self.class_file = ""
+        self.cuda = torch.cuda.is_available()
 
     def set_values(self, param_map):
         # Set parameters values from Ikomia application
@@ -56,6 +57,7 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
         self.model_weight_file = param_map["model_weight_file"]
         self.input_size = eval(param_map["input_size"])
         self.class_file = param_map["class_file"]
+        self.cuda = utils.strtobool(param_map["cuda"])
 
     def get_values(self):
         # Send parameters values to Ikomia application
@@ -65,7 +67,8 @@ class InferTimmImageClassificationParam(core.CWorkflowTaskParam):
             "use_pretrained": str(self.use_pretrained),
             "model_weight_file": self.model_weight_file,
             "input_size": str(self.input_size),
-            "class_file": self.class_file
+            "class_file": self.class_file,
+            "cuda": str(self.cuda)
         }
         return param_map
 
@@ -90,6 +93,7 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
             self.set_param_object(copy.deepcopy(param))
 
         self.model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "weights")
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() and param is True else "cpu")
 
 
     @staticmethod
@@ -107,7 +111,7 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
     def predict(self, img):
         src_tensor = self.transform(Image.fromarray(img)).unsqueeze(0)
-        out = self.model(src_tensor)
+        out = self.model(src_tensor.to(self.device))
         probabilities = torch.nn.functional.softmax(out[0], dim=0)
         return probabilities
 
@@ -149,6 +153,9 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
                                            pretrained=param.use_pretrained,
                                            checkpoint_path=ckpt,
                                            num_classes=len(self.get_names()))
+
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() and param.cuda is True else "cpu")
+            self.model.to(self.device)
             self.model.eval()
             self.config = resolve_data_config({}, model=self.model)
             self.config["input_size"] = (3, *param.input_size)
@@ -201,7 +208,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
-        self.info.version = "1.2.1"
+        self.info.version = "1.2.2"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
         self.info.journal = "GitHub repository"
