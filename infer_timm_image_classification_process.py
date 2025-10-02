@@ -16,20 +16,19 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import copy
-import os.path
+import os
 import urllib
 
 import torch
-
 from PIL import Image
-
 import numpy as np
-
-from ikomia import utils, core, dataprocess
 
 import timm
 from timm.data import resolve_data_config
 from timm.data.transforms_factory import create_transform
+
+from ikomia import utils, core, dataprocess
+
 
 
 # --------------------
@@ -95,6 +94,46 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
         self.model_folder = os.path.join(os.path.dirname(os.path.realpath(__file__)), "weights")
         self.device = torch.device("cuda:0" if torch.cuda.is_available() and param is True else "cpu")
 
+    def _load_model(self):
+        ckpt = None
+        param = self.get_param_object()
+
+        if param.model_weight_file == "":
+            # ImageNet pre-trained model
+            param.use_pretrained = True
+
+        if param.use_pretrained:
+            class_filename = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
+            if not os.path.isfile(class_filename):
+                url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
+                urllib.request.urlretrieve(url, class_filename)
+
+            self.read_class_names(class_filename)
+        else:
+            if os.path.isfile(param.class_file):
+                self.read_class_names(param.class_file)
+                if os.path.isfile(param.model_weight_file):
+                    ckpt = param.model_weight_file
+            else:
+                raise RuntimeError("Unable to open " + param.class_file)
+
+        self.model = timm.create_model(param.model_name,
+                                       pretrained=param.use_pretrained,
+                                       checkpoint_path=ckpt,
+                                       num_classes=len(self.get_names()))
+
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() and param.cuda is True else "cpu")
+        self.model.to(self.device)
+        self.model.eval()
+        self.config = resolve_data_config({}, model=self.model)
+        self.config["input_size"] = (3, *param.input_size)
+        self.transform = create_transform(**self.config)
+        param.update = False
+
+    def init_long_process(self):
+        torch.hub.set_dir(self.model_folder)
+        self._load_model()
+        super().init_long_process()
 
     @staticmethod
     def polygon2bbox(pts):
@@ -122,45 +161,8 @@ class InferTimmImageClassification(dataprocess.CClassificationTask):
 
         # Get parameters :
         param = self.get_param_object()
-
-        if not self.model or param.update:
-            ckpt = None
-            if param.model_weight_file == "":
-                # ImageNet pre-trained model
-                param.use_pretrained = True
-
-            if param.use_pretrained:
-                class_filename = os.path.join(os.path.dirname(__file__), "imagenet_classes.txt")
-                if not os.path.isfile(class_filename):
-                    url = "https://raw.githubusercontent.com/pytorch/hub/master/imagenet_classes.txt"
-                    urllib.request.urlretrieve(url, class_filename)
-
-                self.read_class_names(class_filename)
-            else:
-                if os.path.isfile(param.class_file):
-                    self.read_class_names(param.class_file)
-                    if os.path.isfile(param.model_weight_file):
-                        ckpt = param.model_weight_file
-                else:
-                    print("Unable to open " + param.class_file)
-                    # Step progress bar:
-                    self.emit_step_progress()
-                    # Call end_task_run to finalize process
-                    self.end_task_run()
-
-            torch.hub.set_dir(self.model_folder)
-            self.model = timm.create_model(param.model_name,
-                                           pretrained=param.use_pretrained,
-                                           checkpoint_path=ckpt,
-                                           num_classes=len(self.get_names()))
-
-            self.device = torch.device("cuda:0" if torch.cuda.is_available() and param.cuda is True else "cpu")
-            self.model.to(self.device)
-            self.model.eval()
-            self.config = resolve_data_config({}, model=self.model)
-            self.config["input_size"] = (3, *param.input_size)
-            self.transform = create_transform(**self.config)
-            param.update = False
+        if param.update:
+            self._load_model()
 
         # Get input :
         img_input = self.get_input(0)
@@ -208,16 +210,16 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # relative path -> as displayed in Ikomia application process tree
         self.info.path = "Plugins/Python/Classification"
         self.info.icon_path = "icons/timm.png"
-        self.info.version = "1.2.2"
+        self.info.version = "1.3.0"
         self.info.authors = "Ross Wightman"
         self.info.article = "PyTorch Image Models"
         self.info.journal = "GitHub repository"
         self.info.year = 2019
         self.info.license = "Apache-2.0 License"
         # Ikomia API compatibility
-        self.info.min_ikomia_version = "0.11.1"
+        self.info.min_ikomia_version = "0.15.0"
         # Python compatibility
-        self.info.min_python_version = "3.8.0"
+        self.info.min_python_version = "3.9.0"
         # URL of documentation
         self.info.documentation_link = "https://rwightman.github.io/pytorch-image-models/"
         # Code source repository
@@ -227,6 +229,10 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         self.info.keywords = "timm, infer, image, classification, imagenet, custom"
         self.info.algo_type = core.AlgoType.INFER
         self.info.algo_tasks = "CLASSIFICATION"
+        self.info.hardware_config.min_cpu = 4
+        self.info.hardware_config.min_ram = 8
+        self.info.hardware_config.gpu_required = False
+        self.info.hardware_config.min_vram = 6
 
     def create(self, param=None):
         # Create process object
