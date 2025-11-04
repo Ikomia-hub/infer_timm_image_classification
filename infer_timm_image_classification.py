@@ -17,7 +17,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from ikomia import dataprocess
-
+from infer_timm_image_classification.infer_timm_image_classification_process import InferTimmImageClassificationFactory
 
 # --------------------
 # - Interface class to integrate the process with Ikomia application
@@ -30,7 +30,6 @@ class IkomiaPlugin(dataprocess.CPluginProcessInterface):
 
     def get_process_factory(self):
         # Instantiate process object
-        from infer_timm_image_classification.infer_timm_image_classification_process import InferTimmImageClassificationFactory
         return InferTimmImageClassificationFactory()
 
     def get_widget_factory(self):
