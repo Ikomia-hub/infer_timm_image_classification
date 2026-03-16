@@ -219,7 +219,7 @@ class InferTimmImageClassificationFactory(dataprocess.CTaskFactory):
         # Ikomia API compatibility
         self.info.min_ikomia_version = "0.16.0"
         # Python compatibility
-        self.info.min_python_version = "3.9.0"
+        self.info.min_python_version = "3.10.0"
         # URL of documentation
         self.info.documentation_link = "https://rwightman.github.io/pytorch-image-models/"
         # Code source repository
